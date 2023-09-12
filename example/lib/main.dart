@@ -122,16 +122,6 @@ class _DashboardWidgetState extends State<DashboardWidget> {
 
   int? slot;
 
-  setSlot() {
-    var w = MediaQuery.of(context).size.width;
-    setState(() {
-      slot = w > 600
-          ? w > 900
-              ? 8
-              : 6
-          : 4;
-    });
-  }
 
   List<String> d = [];
 

@@ -48,11 +48,14 @@ class Dashboard<T extends DashboardItem> extends StatefulWidget {
       this.emptyPlaceholder,
       this.absorbPointer = true,
       this.animateEverytime = true,
+      this.refresh = false,
       this.itemStyle = const ItemStyle()})
       : assert((slotHeight == null && slotAspectRatio == null) ||
             !(slotHeight != null && slotAspectRatio != null)),
         editModeSettings = editModeSettings ?? EditModeSettings(),
         super(key: key);
+
+  final bool refresh;
 
   /// [slotAspectRatio] determines slots height. Slot width determined by
   /// viewport width and [slotCount].
@@ -199,7 +202,14 @@ class _DashboardState<T extends DashboardItem> extends State<Dashboard<T>>
   ///
   @override
   void initState() {
-    _layoutController = _DashboardLayoutController<T>();
+    _layoutController = _DashboardLayoutController<T>(
+        itemController: widget.dashboardItemController,
+        animateEverytime: widget.animateEverytime,
+        axis: Axis.vertical,
+        shrinkOnMove: widget.editModeSettings.shrinkOnMove,
+        shrinkToPlace: widget.shrinkToPlace,
+        slideToTop: widget.slideToTop,
+        slotCount: widget.slotCount);
     _layoutController.addListener(() {
       setState(() {});
     });
@@ -337,12 +347,13 @@ class _DashboardState<T extends DashboardItem> extends State<Dashboard<T>>
   Widget build(BuildContext context) {
     _building = true;
     bool differentReload = _reloadFor != widget.slotCount;
-    if (_layoutController._isAttached &&
-        (!_reloading || differentReload) &&
-        _layoutController.slotCount != widget.slotCount &&
-        _withDelegate &&
-        widget
-            .dashboardItemController.itemStorageDelegate!.layoutsBySlotCount) {
+    if ((_layoutController._isAttached &&
+            (!_reloading || differentReload) &&
+            _layoutController.slotCount != widget.slotCount &&
+            _withDelegate &&
+            widget.dashboardItemController.itemStorageDelegate!
+                .layoutsBySlotCount) ||
+        widget.refresh) {
       _reloading = true;
       _reloadFor = widget.slotCount;
       widget.dashboardItemController._items.clear();
@@ -399,7 +410,9 @@ class _DashboardState<T extends DashboardItem> extends State<Dashboard<T>>
         }
       }
       if (widget.dashboardItemController._items.isEmpty) {
-        return widget.dashboardItemController.isEditing ? dashboardWidget(constrains) : widget.emptyPlaceholder ?? const SizedBox();
+        return widget.dashboardItemController.isEditing
+            ? dashboardWidget(constrains)
+            : widget.emptyPlaceholder ?? const SizedBox();
       }
 
       return dashboardWidget(constrains);
@@ -408,14 +421,12 @@ class _DashboardState<T extends DashboardItem> extends State<Dashboard<T>>
 
   Widget dashboardWidget(BoxConstraints constrains) {
     return Scrollable(
-        physics: scrollable
-            ? widget.physics
-            : const NeverScrollableScrollPhysics(),
+        physics:
+            scrollable ? widget.physics : const NeverScrollableScrollPhysics(),
         key: _scrollableKey,
         controller: widget.scrollController,
         semanticChildCount: widget.dashboardItemController._items.length,
-        dragStartBehavior:
-        widget.dragStartBehavior ?? DragStartBehavior.start,
+        dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
         scrollBehavior: widget.scrollBehavior,
         viewportBuilder: (c, o) {
           if (!_reloading) _setNewOffset(o, constrains);
