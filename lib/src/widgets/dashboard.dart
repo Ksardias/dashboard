@@ -211,7 +211,9 @@ class _DashboardState<T extends DashboardItem> extends State<Dashboard<T>>
         slideToTop: widget.slideToTop,
         slotCount: widget.slotCount);
     _layoutController.addListener(() {
-      setState(() {});
+      if(mounted){
+        setState(() {});
+      }
     });
 
     widget.dashboardItemController._attach(_layoutController);
